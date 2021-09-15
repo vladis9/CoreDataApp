@@ -6,14 +6,99 @@
 //
 
 import UIKit
+import CoreData
 
-class ViewController: UIViewController {
+class ViewController: UITableViewController {
+    
+    private let cellID = "cell"
+    private var tasks: [String] = []
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view.
+        setupView()
+        
+        // Cell register
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: cellID)
     }
 
-
+    /// Setup view
+    private func setupView() {
+        view.backgroundColor = .white
+        setupNavigationBar()
+    }
+    
+    /// Setup navigation bar
+    private func setupNavigationBar() {
+        title = "Tasks list"
+        navigationController?.navigationBar.prefersLargeTitles = true
+        
+        let navBarAppearance = UINavigationBarAppearance()
+        navBarAppearance.configureWithOpaqueBackground()
+        navBarAppearance.titleTextAttributes = [.foregroundColor: UIColor.white]
+        navBarAppearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
+        
+        navBarAppearance.backgroundColor = UIColor(
+            red: 21/255,
+            green: 101/255,
+            blue: 191/255,
+            alpha: 194/255
+        )
+        navigationController?.navigationBar.standardAppearance = navBarAppearance
+        navigationController?.navigationBar.scrollEdgeAppearance = navBarAppearance
+        
+        // Add button to nav bar
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Add",
+            style: .plain,
+            target: self,
+            action: #selector(addNewTask)
+        )
+        navigationController?.navigationBar.tintColor = .white
+    }
+    
+    @objc private func addNewTask() {
+        showAlert(title: "New Task", message: "What do you want to do")
+    }
+    
+    // Create alert for a new task
+    private func showAlert(title: String, message: String) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
+            guard let task = alert.textFields?.first?.text, !task.isEmpty else {
+                print("TextField is empty")
+                return
+            }
+            
+            // Add new task to array
+            self.tasks.append(task)
+            
+            self.tableView.insertRows(
+                at: [IndexPath(row: self.tasks.count - 1, section: 0)],
+                with: .automatic
+            )
+        }
+        
+        let cancelAction = UIAlertAction(title: "Cancel", style: .destructive)
+        
+        alert.addTextField()
+        alert.addAction(saveAction)
+        alert.addAction(cancelAction)
+        
+        present(alert, animated: true)
+    }
 }
 
+extension ViewController {
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return tasks.count
+    }
+    
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: cellID, for: indexPath)
+        
+        let task = tasks[indexPath.row]
+        cell.textLabel?.text = task
+        
+        return cell
+    }
+}
