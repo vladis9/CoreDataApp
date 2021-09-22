@@ -11,7 +11,8 @@ import CoreData
 class ViewController: UITableViewController {
     
     private let cellID = "cell"
-    private var tasks: [String] = []
+    private var tasks: [Task] = []
+    private let manageContext = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -19,6 +20,11 @@ class ViewController: UITableViewController {
         
         // Cell register
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: cellID)
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        fetchData()
     }
 
     /// Setup view
@@ -70,12 +76,7 @@ class ViewController: UITableViewController {
             }
             
             // Add new task to array
-            self.tasks.append(task)
-            
-            self.tableView.insertRows(
-                at: [IndexPath(row: self.tasks.count - 1, section: 0)],
-                with: .automatic
-            )
+            self.save(task)
         }
         
         let cancelAction = UIAlertAction(title: "Cancel", style: .destructive)
@@ -85,6 +86,38 @@ class ViewController: UITableViewController {
         alert.addAction(cancelAction)
         
         present(alert, animated: true)
+    }
+    
+    private func save(_ taskName: String) {
+        
+        // Entity name
+        guard let entityDescription = NSEntityDescription.entity(forEntityName: "Task", in: manageContext) else { return }
+        
+        // Model instance
+        let task = NSManagedObject(entity: entityDescription, insertInto: manageContext) as! Task
+        
+        task.name = taskName
+        
+        do {
+            try manageContext.save()
+            tasks.append(task)
+            self.tableView.insertRows(
+                at: [IndexPath(row: self.tasks.count - 1, section: 0)],
+                with: .automatic
+            )
+        } catch let error {
+            print(error.localizedDescription)
+        }
+    }
+    
+    private func fetchData() {
+        let fetchRequest: NSFetchRequest<Task> = Task.fetchRequest()
+        
+        do {
+            tasks = try manageContext.fetch(fetchRequest)
+        } catch let error {
+            print(error.localizedDescription)
+        }
     }
 }
 
@@ -97,7 +130,7 @@ extension ViewController {
         let cell = tableView.dequeueReusableCell(withIdentifier: cellID, for: indexPath)
         
         let task = tasks[indexPath.row]
-        cell.textLabel?.text = task
+        cell.textLabel?.text = task.name
         
         return cell
     }
